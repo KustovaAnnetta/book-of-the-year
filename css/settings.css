@@ -159,3 +159,14 @@
     .bar.is-cover .pen-panel{background:rgba(15,31,61,.96)}
   }
 }
+
+/* ===== Английская версия — как в английской книге (js/i18n.js ставит <html lang="en">) =====
+   В английской книге нет видео эфиров, плееров медитации и QR-кодов — прячем их.
+   Номер-кружок под плеером (①) остаётся. Текст медитации (.en-only) показываем только по-английски. */
+html:not([lang="en"]) .en-only{display:none}
+html[lang="en"] .media-player,
+html[lang="en"] .aplayer,
+html[lang="en"] .media-cap,
+html[lang="en"] .qr-fig{display:none}
+html[lang="en"] figure.media:not(:has(.cap-badge)){display:none}
+html[lang="en"] figure.media:has(.cap-badge){padding-top:0;margin-top:0}
