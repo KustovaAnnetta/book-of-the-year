@@ -1,4 +1,4 @@
-/* Настройки письма: шрифт ответов и цвет ручки.
+/* Настройки: шрифт ответов, цвет ручки и язык сайта (язык — js/i18n.js).
    Выбор сохраняется в localStorage (kniga-goda:v1:hand, kniga-goda:v1:pen)
    и ставится на <html> как data-hand / data-pen — стили в css/settings.css.
    Ранняя установка (без мигания шрифта) — маленький скрипт в <head> index.html. */
@@ -9,7 +9,7 @@
   if (!box) return;
   var btn = box.querySelector(".pen-set__btn");
   var panel = box.querySelector(".pen-panel");
-  var tabs = box.querySelectorAll(".pen-tab");
+  var tabs = box.querySelectorAll(".pen-tab[data-tab]");
 
   function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -23,6 +23,8 @@
     box.querySelectorAll(".pen-opt[data-pen]").forEach(function (o) {
       o.setAttribute("aria-checked", String(o.getAttribute("data-pen") === pen));
     });
+    var lang = window.I18N ? I18N.lang() : "ru";
+    box.querySelectorAll(".pen-seg [data-lang]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === lang)); });
     /* образцы шрифтов сами пишутся текущим цветом ручки, а образцы цветов — текущим шрифтом:
        переменные --pen и --hand-* наследуются от <html> */
   }
@@ -45,6 +47,8 @@
   tabs.forEach(function (t) { t.addEventListener("click", function () { openTab(t.getAttribute("data-tab")); }); });
 
   box.addEventListener("click", function (e) {
+    var l = e.target.closest(".pen-seg [data-lang]");
+    if (l) { if (window.I18N) I18N.set(l.getAttribute("data-lang")); return; }   // язык: страница перезагрузится на том же месте
     var o = e.target.closest(".pen-opt");
     if (!o) return;
     if (o.hasAttribute("data-hand")) { root.setAttribute("data-hand", o.getAttribute("data-hand")); save(KEY_HAND, o.getAttribute("data-hand")); }
