@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/sync.css">
   <!-- язык сайта: английский словарь подключается сразу, если выбран английский (js/i18n.js) -->
-  <script>try{if(localStorage.getItem("kniga-goda:v1:lang")==="en")document.write('<script src="i18n/en.js"><\/script><script src="i18n/en-art.js"><\/script>')}catch(e){}</script>
+  <script>try{var L=localStorage.getItem("kniga-goda:v1:lang");if(L!=="en"&&L!=="ru")L=[].concat(navigator.languages||[],navigator.language||"").some(function(x){return /^ru\b/i.test(x||"")})?"ru":"en";if(L==="en")document.write('<script src="i18n/en.js"><\/script><script src="i18n/en-art.js"><\/script>')}catch(e){}</script>
   <script src="js/i18n.js"></script>
   <link rel="stylesheet" href="css/settings.css">
   <script>try{var h=localStorage.getItem("kniga-goda:v1:hand"),p=localStorage.getItem("kniga-goda:v1:pen");if(h)document.documentElement.setAttribute("data-hand",h);if(p)document.documentElement.setAttribute("data-pen",p)}catch(e){}</script>

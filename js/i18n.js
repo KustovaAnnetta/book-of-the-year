@@ -13,13 +13,23 @@
    Фразы, которых нет в словаре, остаются по-русски — на русской версии ничего не меняется.
 
    ЯЗЫК хранится в kniga-goda:v1:lang ("ru" | "en") — сохраняется и в аккаунте.
+   Пока человек сам не выбрал язык в настройках — язык браузера: если среди языков
+   браузера есть русский — русская версия, иначе английская (то же правило в <head> index.html).
    Смена языка — перезагрузка страницы на том же месте (js/settings.js → I18N.set).
    Словарь подключается ещё в <head> (index.html), поэтому английский виден сразу. */
 (function () {
   "use strict";
   var KEY = "kniga-goda:v1:lang";
   var root = document.documentElement;
-  function get() { try { return localStorage.getItem(KEY) === "en" ? "en" : "ru"; } catch (e) { return "ru"; } }
+  function browserLang() {
+    var l = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || "ru"]);
+    return l.some(function (x) { return /^ru\b/i.test(x || ""); }) ? "ru" : "en";
+  }
+  function get() {
+    var saved = null;
+    try { saved = localStorage.getItem(KEY); } catch (e) {}
+    return saved === "en" || saved === "ru" ? saved : browserLang();   // выбор в настройках важнее языка браузера
+  }
   var lang = get();
   var CYR = /[А-Яа-яЁё]/;
   var INLINE = { B: 1, STRONG: 1, I: 1, EM: 1, U: 1, S: 1, SMALL: 1, SUP: 1, SUB: 1, MARK: 1, Q: 1, ABBR: 1, SPAN: 1, BR: 1, A: 1 };
