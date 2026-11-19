@@ -676,7 +676,14 @@ window.I18N_EN = {
     "Вы ещё не зарегистрированы. Введите имя и дату рождения — и пройдите регистрацию": "You are not registered yet. Enter your name and date of birth to complete registration",
     "Этой почты нет в списке покупателей. Проверьте адрес или напишите автору, чтобы открыть доступ": "This email is not on the list of buyers. Check the address or write to the author to get access",
     "Не получилось проверить почту. Попробуйте ещё раз": "Could not check the email. Please try again",
-    "Зарегистрироваться": "Register"
+    "Зарегистрироваться": "Register",
+    "Последний шагзнакомство": "One last step<span class=\"sync-modal__script\">introduce yourself</span>",
+    "знакомство": "introduce yourself",
+    "Почта подтверждена. Введите своё имя и дату рождения — и книга откроется": "Your email is confirmed. Enter your name and date of birth — and the book will open",
+    "Книга годавход в книгу": "Book of the Year<span class=\"sync-modal__script\">sign in to your book</span>",
+    "Введите почту, которую вы оставили автору при покупке, — мы пришлём на неё ссылку для входа": "Enter the email you gave the author when you bought the book — we will send you a sign-in link",
+    "Этой почты нет в списке покупателей. Чтобы открыть книгу, купите доступ у автора — @annetta_kustova": "This email is not on the list of buyers. To open the book, buy access from the author — @annetta_kustova",
+    "Не получилось сохранить. Попробуйте ещё раз": "Could not save. Please try again"
   },
   patterns: [
     ["^Страница (\\d+)$", "Page $1"],

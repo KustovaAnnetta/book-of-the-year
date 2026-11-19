@@ -315,4 +315,4 @@ html.kg-gate body{background:#03071a}
 html.kg-gate .sync-modal{visibility:visible;opacity:1;transition:none}
 html.kg-gate .sync-modal__close{display:none}
 html.kg-gate .sync-modal__backdrop{background:radial-gradient(ellipse at center,#0b1638 0%,#03071a 70%)}
-html.kg-gate .sync-modal[data-view="start"] .sv-start{animation:none}
+html.kg-gate .sync-modal[data-view="login"] .sv-login{animation:none}
