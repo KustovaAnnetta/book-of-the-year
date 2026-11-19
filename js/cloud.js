@@ -105,6 +105,7 @@
     dirty = {};
     var F = fb();
     var meta = { email: u.email || F.auth.currentUser.email || "", name: u.name || F.auth.currentUser.displayName || "", savedAt: Number(ls.getItem(CHANGED)) || Date.now() };
+    var birth = ls.getItem(P + "birth"); if (birth) meta.birth = birth;   // дата рождения из регистрации (ГГГГ-ММ-ДД) — видна в карточке books/{uid}
     // только место чтения (листание) — отметку не трогаем, чтобы другие устройства не перечитывали книгу на каждую прокрутку
     if (keys.every(function (k) { return k === "pos"; })) meta = null;
     else known = meta.savedAt;                                // свою же запись в «живом» наблюдении не считаем чужой

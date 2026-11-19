@@ -166,12 +166,46 @@
     }).finally(function () { if (form !== modal) busy(form, false); });
   }
 
+  /* ---------- дата рождения: списки «день / месяц / год» ----------
+     Сохраняется как "ГГГГ-ММ-ДД" в kniga-goda:v1:birth — уходит в аккаунт вместе с книгой
+     (js/cloud.js) и пишется в карточку books/{uid} полем birth. */
+  var BIRTH_KEY = "kniga-goda:v1:birth";
+  var bD = regForm.querySelector(".birth__d"), bM = regForm.querySelector(".birth__m"), bY = regForm.querySelector(".birth__y");
+  (function fillBirth() {
+    var en = window.I18N && I18N.lang() === "en";
+    var months = en ? ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+                    : ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+    var opt = function (sel, value, text) { var o = document.createElement("option"); o.value = value; o.textContent = text; sel.appendChild(o); };
+    opt(bD, "", en ? "Day" : "День"); opt(bM, "", en ? "Month" : "Месяц"); opt(bY, "", en ? "Year" : "Год");
+    for (var d = 1; d <= 31; d++) opt(bD, d, d);
+    months.forEach(function (m, i) { opt(bM, i + 1, m); });
+    for (var y = new Date().getFullYear() - 5; y >= 1930; y--) opt(bY, y, y);
+    [bD, bM, bY].forEach(function (s) { s.options[0].disabled = true; s.selectedIndex = 0; });
+    if (en) { bD.parentNode.insertBefore(bM, bD); bD.parentNode.classList.add("birth--mdy"); }   // по-английски привычнее «Month Day Year»
+  })();
+  // в коротких месяцах лишние дни недоступны (30 февраля и т. п.)
+  function fixDays() {
+    var y = Number(bY.value) || 2000, m = Number(bM.value);
+    var max = m ? new Date(y, m, 0).getDate() : 31;
+    for (var i = 1; i < bD.options.length; i++) bD.options[i].disabled = Number(bD.options[i].value) > max;
+    if (Number(bD.value) > max) bD.selectedIndex = 0;
+  }
+  bM.addEventListener("change", fixDays); bY.addEventListener("change", fixDays);
+  [bD, bM, bY].forEach(function (s) { s.addEventListener("change", function () { s.classList.toggle("is-set", !!s.value); }); });
+  function birthValue() {
+    if (!bD.value || !bM.value || !bY.value) return "";
+    var p = function (n) { return (n < 10 ? "0" : "") + Number(n); };
+    return bY.value + "-" + p(bM.value) + "-" + p(bD.value);
+  }
+
   regForm.addEventListener("submit", function (e) {
     e.preventDefault();
-    var name = regForm.name.value.trim(), email = regForm.email.value.trim();
-    var okN = name.length >= 2, okE = EMAIL_RE.test(email);
+    var name = regForm.name.value.trim(), email = regForm.email.value.trim(), birth = birthValue();
+    var okN = name.length >= 2, okE = EMAIL_RE.test(email), okB = !!birth;
     setError(regForm, "name", !okN); setError(regForm, "email", !okE, "Проверьте почту — похоже, в адресе опечатка");
-    if (!okN || !okE) return;
+    setError(regForm, "birth", !okB);
+    if (!okN || !okE || !okB) return;
+    set(BIRTH_KEY, birth);
     pending = { mode: "register", name: name, email: email };
     sendLink(regForm);
   });
@@ -249,7 +283,7 @@
     if (!modal.classList.contains("is-open")) return;
     if (e.key === "Escape") close();
     if (e.key === "Tab") {
-      var items = [].slice.call(modal.querySelectorAll("button, input")).filter(function (el) { return el.offsetParent && !el.disabled; });
+      var items = [].slice.call(modal.querySelectorAll("button, input, select")).filter(function (el) { return el.offsetParent && !el.disabled; });
       var first = items[0], last = items[items.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
@@ -273,6 +307,7 @@
       set(KEY, null);
       Auth.signOut();
       [regForm, loginForm, confirmForm].forEach(function (f) { f.reset(); });
+      [bD, bM, bY].forEach(function (s) { s.selectedIndex = 0; s.classList.remove("is-set"); });
       pending = null;
     }
   };

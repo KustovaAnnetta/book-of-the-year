@@ -2500,6 +2500,16 @@
             </div>
             <p class="field__error">Проверьте почту — похоже, в адресе опечатка</p>
           </div>
+          <!-- дата рождения: три списка (день, месяц, год) — заполняет js/sync.js -->
+          <div class="field" data-field="birth">
+            <p class="field__label" id="syncBirthLabel">Дата рождения</p>
+            <div class="birth" role="group" aria-labelledby="syncBirthLabel">
+              <select class="field__input birth__sel birth__d" name="bday" aria-label="День"></select>
+              <select class="field__input birth__sel birth__m" name="bmonth" aria-label="Месяц"></select>
+              <select class="field__input birth__sel birth__y" name="byear" aria-label="Год"></select>
+            </div>
+            <p class="field__error">Пожалуйста, выберите день, месяц и год</p>
+          </div>
           <button class="sync-btn" type="submit"><span class="sync-btn__text">Создать аккаунт</span><span class="sync-btn__spinner" aria-hidden="true"></span></button>
         </form>
         <p class="sync-modal__login">У меня уже есть аккаунт — <button type="button" class="sync-modal__login-link" data-sync-go="login">Войти</button></p>

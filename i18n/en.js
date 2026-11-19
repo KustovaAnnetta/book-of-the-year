@@ -643,7 +643,12 @@ window.I18N_EN = {
     "Цвет эмоции «Злость»": "Colour of “Anger”",
     "Цвет эмоции «Интерес»": "Colour of “Interest”",
     "Цвет эмоции «Любовь»": "Colour of “Love”",
-    "Цвет эмоции «Счастье»": "Colour of “Happiness”"
+    "Цвет эмоции «Счастье»": "Colour of “Happiness”",
+    "Дата рождения": "Date of birth",
+    "День": "Day",
+    "Месяц": "Month",
+    "Год": "Year",
+    "Пожалуйста, выберите день, месяц и год": "Please choose the day, month and year"
   },
   patterns: [
     ["^Страница (\\d+)$", "Page $1"],
