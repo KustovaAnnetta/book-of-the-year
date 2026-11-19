@@ -1,13 +1,15 @@
 /* Окно «Сохраните ваши записи»: регистрация и вход по ССЫЛКЕ из письма (Firebase Authentication).
    Экраны (data-view на #syncModal):
-     register — имя + почта → «Создать аккаунт» → на почту уходит письмо со ссылкой → экран code
-     login    — почта → «Получить ссылку» → экран code
+     start    — «У вас уже есть аккаунт?» Да → login, Нет → register. Пока человек не вошёл, книга закрыта этим окном
+     register — почта (должна быть в списке покупателей) + имя + дата рождения → письмо со ссылкой → экран code
+     login    — почта: есть в списке и зарегистрирована → письмо со ссылкой; есть, но не зарегистрирована →
+                register с подсказкой «Вы ещё не зарегистрированы»; нет в списке → «напишите автору»
      code     — «Проверьте почту»: ссылка отправлена, можно отправить ещё раз или изменить почту
      confirm  — ссылку открыли на другом устройстве: ввести почту, чтобы завершить вход
      success  — «Готово, …!» → «Продолжить писать»
    Человек нажимает ссылку в письме → открывается сайт → вход завершается сам → экран success,
    книга подтягивается из Firestore (js/cloud.js).
-   Окно появляется при каждом нажатии на поле для текста или числа, пока человек не вошёл.
+   Окно открыто и не закрывается, пока человек не вошёл и его почта есть в списке покупателей.
 
    Firebase подключён в index.html (window.Firebase, событие "firebase:ready").
    В консоли Firebase должны быть включены: Authentication → Электронная почта/пароль → «Ссылка по
@@ -49,29 +51,72 @@
   });
   function linkUrl() { return location.origin + location.pathname; }   // куда вернёт ссылка из письма — на эту же страницу
 
+  /* ---------- список покупателей ----------
+     Автор вносит почту покупателя в Google Таблицу → Apps Script кладёт её в Firestore:
+       allowed/{почта маленькими буквами} = { registered: false }
+     Регистрация: почта есть в списке + имя + дата рождения → письмо со ссылкой (подтверждает, что почта
+     правда этого человека) → после входа: books/{uid} = { email, name, birth }, allowed/{почта}.registered = true.
+     Вход: почта есть в списке и уже зарегистрирована → письмо со ссылкой → своя книга.
+     Пока человек не вошёл и его почты нет в списке, книга закрыта окном без крестика.
+     Правила Firestore пускают к записям только тех, чья почта есть в allowed: убрали почту из таблицы — доступ закрыт. */
+  function emailId(e) { return String(e || "").trim().toLowerCase(); }
+  // "none" — почты нет в списке; "new" — есть, но ещё не зарегистрирована; "registered"; "error" — не удалось узнать
+  function lookup(email) {
+    return fbReady.then(function (F) { return F.fb.getDoc(F.fb.doc(F.db, "allowed", emailId(email))); })
+      .then(function (s) { return !s.exists() ? "none" : (s.data().registered ? "registered" : "new"); })
+      .catch(function (err) { if (window.console) console.warn("Почта не проверилась:", err && (err.code || err)); return "error"; });
+  }
+  var NOT_LISTED = "Этой почты нет в списке покупателей. Проверьте адрес или напишите автору, чтобы открыть доступ";
+  var CHECK_FAILED = "Не получилось проверить почту. Попробуйте ещё раз";
+  var REG_FOR_LINK = "kniga-goda:regForSignIn";       // имя и дата рождения из регистрации — запишем после входа
+
+  // после входа по ссылке из регистрации: записать имя и дату рождения и отметить почту зарегистрированной
+  function saveRegistration(F, u, reg) {
+    var b = F.fb.writeBatch(F.db);
+    b.set(F.fb.doc(F.db, "books", u.uid), { email: u.email || "", name: reg.name, birth: reg.birth }, { merge: true });
+    b.update(F.fb.doc(F.db, "allowed", emailId(u.email)), { registered: true, uid: u.uid, registeredAt: F.fb.serverTimestamp() });
+    return b.commit();
+  }
+
   var Auth = {
-    // отправить письмо со ссылкой для входа
-    sendLink: function (email, name) {
+    // отправить письмо со ссылкой для входа; reg = { name, birth } — при регистрации
+    // (едет и в самой ссылке, чтобы регистрация завершилась, даже если письмо открыли на другом устройстве)
+    sendLink: function (email, reg) {
       if (location.protocol === "file:") return Promise.reject({ code: "local-file" });
+      var url = linkUrl() + (reg ? "?reg=1&n=" + encodeURIComponent(reg.name) + "&b=" + encodeURIComponent(reg.birth) : "");
       return fbReady.then(function (F) {
-        return F.fb.sendSignInLinkToEmail(F.auth, email, { url: linkUrl(), handleCodeInApp: true });
+        return F.fb.sendSignInLinkToEmail(F.auth, email, { url: url, handleCodeInApp: true });
       }).then(function () {
         set(EMAIL_FOR_LINK, email);
-        set(NAME_FOR_LINK, name || null);
+        set(REG_FOR_LINK, reg ? JSON.stringify(reg) : null);
       });
     },
-    // завершить вход по ссылке из адресной строки
+    // завершить вход по ссылке из адресной строки (и регистрацию, если ссылка из регистрации)
     complete: function (email) {
+      var q = new URLSearchParams(location.search), reg = null;
+      if (q.get("reg") && q.get("n") && q.get("b")) reg = { name: q.get("n"), birth: q.get("b") };
+      else try { reg = JSON.parse(get(REG_FOR_LINK) || "null"); } catch (e) {}
       return fbReady.then(function (F) {
         return F.fb.signInWithEmailLink(F.auth, email, location.href).then(function (cred) {
-          var u = cred.user, name = get(NAME_FOR_LINK) || u.displayName || "";
+          var u = cred.user, name = (reg && reg.name) || u.displayName || "";
           var job = (name && name !== u.displayName) ? F.fb.updateProfile(u, { displayName: name }).catch(function () {}) : Promise.resolve();
           return job.then(function () {
-            set(EMAIL_FOR_LINK, null); set(NAME_FOR_LINK, null);
+            if (!reg) return;
+            if (reg.birth) set("kniga-goda:v1:birth", reg.birth);
+            return saveRegistration(F, u, reg).catch(function (err) { if (window.console) console.warn("Регистрация не записалась:", err && (err.code || err)); });
+          }).then(function () {
+            set(EMAIL_FOR_LINK, null); set(NAME_FOR_LINK, null); set(REG_FOR_LINK, null);
             history.replaceState(null, "", linkUrl() + location.hash);   // убрать служебные параметры ссылки из адреса
             return { name: name, email: u.email, uid: u.uid };
           });
         });
+      });
+    },
+    // вошедший человек: можно ли к книге. "ok" | "new" (почта в списке, но не зарегистрирован) | "none" | null (нет сети)
+    access: function () {
+      return fbReady.then(function (F) {
+        var u = F.auth.currentUser; if (!u) return "none";
+        return lookup(u.email).then(function (st) { return st === "registered" ? "ok" : st === "error" ? null : st; });
       });
     },
     signOut: function () { return fbReady.then(function (F) { return F.fb.signOut(F.auth); }).catch(function () {}); }
@@ -111,20 +156,26 @@
   })();
 
   /* ---------- экраны ---------- */
+  var wantView = "start";        // какой экран показать (открытие окна с задержкой не должно перебить более поздний выбор)
   function show(view) {
+    wantView = view;
     modal.dataset.view = view;
-    var first = { register: regForm.name, login: loginForm.email, confirm: confirmForm.email }[view];
+    var first = { register: regForm.email.value ? regForm.name : regForm.email, login: loginForm.email, confirm: confirmForm.email }[view];
     if (first) setTimeout(function () { first.focus(); }, 60);
   }
+  // книга закрыта, пока человек не вошёл: окно без крестика, не закрывается по Esc и по клику мимо
+  function lock() { modal.classList.toggle("is-locked", !isRegistered()); }
   function open(target, view) {
     lastFocus = target || document.activeElement;
+    lock();
     modal.classList.add("is-open");
     modal.setAttribute("aria-hidden", "false");
     document.documentElement.style.overflow = "hidden";
-    setTimeout(function () { show(view || "register"); }, 250);
+    wantView = view || "start";
+    setTimeout(function () { show(wantView); }, 250);
   }
   function close() {
-    if (!modal.classList.contains("is-open")) return;
+    if (!modal.classList.contains("is-open") || !isRegistered()) return;
     modal.classList.remove("is-open");
     modal.setAttribute("aria-hidden", "true");
     document.documentElement.style.overflow = "";
@@ -156,7 +207,7 @@
   function sendLink(form) {
     busy(form, true);
     linkError.hidden = true;
-    return Auth.sendLink(pending.email, pending.name).then(function () {
+    return Auth.sendLink(pending.email, pending.reg).then(function () {
       codeEmailEl.textContent = pending.email;
       startCooldown();
       show("code");
@@ -205,27 +256,41 @@
     setError(regForm, "name", !okN); setError(regForm, "email", !okE, "Проверьте почту — похоже, в адресе опечатка");
     setError(regForm, "birth", !okB);
     if (!okN || !okE || !okB) return;
-    set(BIRTH_KEY, birth);
-    pending = { mode: "register", name: name, email: email };
-    sendLink(regForm);
+    busy(regForm, true);
+    // почта должна быть в списке покупателей (её вносит автор)
+    lookup(email).then(function (st) {
+      if (st === "none" || st === "error") { busy(regForm, false); setError(regForm, "email", true, st === "none" ? NOT_LISTED : CHECK_FAILED); return; }
+      set(BIRTH_KEY, birth);
+      pending = { mode: "register", name: name, email: email, reg: { name: name, birth: birth } };
+      sendLink(regForm);
+    });
   });
+  var notice = modal.querySelector(".sync-notice");
   loginForm.addEventListener("submit", function (e) {
     e.preventDefault();
     var email = loginForm.email.value.trim(), ok = EMAIL_RE.test(email);
     setError(loginForm, "email", !ok, "Проверьте почту — похоже, в адресе опечатка");
     if (!ok) return;
-    pending = { mode: "login", name: "", email: email };
-    sendLink(loginForm);
+    busy(loginForm, true);
+    lookup(email).then(function (st) {
+      if (st === "registered") { pending = { mode: "login", name: "", email: email, reg: null }; sendLink(loginForm); return; }
+      busy(loginForm, false);
+      if (st === "new") {                       // почта в списке, но имени и даты рождения ещё нет — на регистрацию
+        regForm.email.value = email; notice.hidden = false; show("register"); return;
+      }
+      setError(loginForm, "email", true, st === "none" ? NOT_LISTED : CHECK_FAILED);
+    });
   });
   resendBtn.addEventListener("click", function () {
     if (!pending || resendBtn.disabled) return;
-    Auth.sendLink(pending.email, pending.name).then(function () { linkError.hidden = true; startCooldown(); },
+    Auth.sendLink(pending.email, pending.reg).then(function () { linkError.hidden = true; startCooldown(); },
       function (err) { linkError.textContent = errorText(err); linkError.hidden = false; });
   });
 
   /* ---------- вход завершён ---------- */
   function signedIn(user, fresh) {
     set(KEY, JSON.stringify(user));
+    lock();
     hello.textContent = user.name || "друг";
     successMsg.textContent = fresh
       ? "Вы вошли в свою книгу. Записи сохраняются в вашем аккаунте — их можно открыть на любом устройстве."
@@ -237,8 +302,16 @@
   function finish(email, form) {
     if (form) busy(form, true);
     return Auth.complete(email).then(function (user) {
-      signedIn(user, true);
-      if (modal.classList.contains("is-open")) show("success"); else open(null, "success");
+      return Auth.access().then(function (st) {
+        var view = "success";
+        if (st === "ok" || st === null) signedIn(user, true);
+        else if (st === "new") { regForm.email.value = user.email || ""; notice.hidden = false; view = "register"; }
+        else {                                   // почты нет в списке покупателей
+          Auth.signOut(); view = "login"; loginForm.email.value = user.email || "";
+          setTimeout(function () { setError(loginForm, "email", true, NOT_LISTED); }, 300);
+        }
+        if (modal.classList.contains("is-open")) show(view); else open(null, view);
+      });
     }, function (err) {
       if (form) { setError(form, "email", true, errorText(err)); return; }
       open(null, "login");
@@ -261,16 +334,30 @@
     // уже вошёл раньше (Firebase помнит вход) — или вышел в другом месте
     F.fb.onAuthStateChanged(F.auth, function (u) {
       var saved = null; try { saved = JSON.parse(get(KEY) || "null"); } catch (e) {}
-      if (u && (!saved || saved.uid !== u.uid)) signedIn({ name: u.displayName || "", email: u.email, uid: u.uid }, false);
-      if (!u && saved) set(KEY, null);     // вход больше не действует — окно снова попросит войти
+      if (!u) { if (saved) { set(KEY, null); gate(); } return; }   // вход больше не действует — книга закрывается
+      // вход есть — почта всё ещё в списке покупателей? (нет сети — ничего не меняем)
+      Auth.access().then(function (st) {
+        if (st === null) return;
+        if (st === "ok") {
+          if (!saved || saved.uid !== u.uid) signedIn({ name: u.displayName || "", email: u.email, uid: u.uid }, false);
+          if (modal.dataset.view === "start") close();
+        } else { set(KEY, null); gate(); }      // автор убрал почту из таблицы — книга снова закрыта
+      });
     });
   });
+  // закрыть книгу: показать окно «У вас уже есть аккаунт?»
+  function gate() {
+    if (isRegistered()) return;
+    if (modal.classList.contains("is-open")) lock(); else open(null, "start");
+  }
+  gate();
 
   /* ---------- переходы, закрытие, клавиатура ---------- */
   modal.addEventListener("click", function (e) {
     var go = e.target.closest("[data-sync-go]");
     if (go) {
       if (go.dataset.syncGo === "login" && EMAIL_RE.test(regForm.email.value.trim())) loginForm.email.value = regForm.email.value.trim();
+      if (go.dataset.syncGo === "register") notice.hidden = true;
       show(go.dataset.syncGo);
     }
     if (e.target.closest("[data-sync-back]")) show(pending && pending.mode === "login" ? "login" : "register");

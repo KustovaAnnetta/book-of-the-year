@@ -37,7 +37,8 @@
   function saveTimes(t) { try { origSet.call(ls, TIMES, JSON.stringify(t)); } catch (e) {} }
 
   /* ---------- Firestore ---------- */
-  function fb() { var F = window.Firebase; return F && F.auth && F.auth.currentUser ? F : null; }
+  // книгу отправляем и сверяем, только когда вход завершён и почта есть в списке покупателей (js/sync.js кладёт syncUser)
+  function fb() { var F = window.Firebase, u = user(); return F && F.auth && F.auth.currentUser && u && u.uid === F.auth.currentUser.uid ? F : null; }
   function uid() { var F = fb(); return F ? F.auth.currentUser.uid : null; }
   var Cloud = {
     // вся книга человека: { savedAt, items: [{ k, v, t }] }

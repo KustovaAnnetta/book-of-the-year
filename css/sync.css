@@ -193,6 +193,7 @@
 
 /* экраны окна: регистрация / вход / код / готово — показывается тот, что в data-view */
 .sync-modal .sv{display:none}
+.sync-modal[data-view="start"] .sv-start,
 .sync-modal[data-view="register"] .sv-register,
 .sync-modal[data-view="login"] .sv-login,
 .sync-modal[data-view="code"] .sv-code,
@@ -286,3 +287,23 @@
 .sync-form .field.is-invalid .birth__sel:not(.is-set){border-color:var(--error);box-shadow:0 0 0 4px #ff9b8f1a}
 .sync-form .field.is-invalid .birth__sel.is-set{border-color:#f5cc6333;box-shadow:none}
 @media (max-width:420px){.sync-form .birth{gap:6px}.sync-form .birth__sel{padding:0 24px 0 10px;font-size:15px;background-position:right 7px center}}
+
+/* ===== книга закрыта, пока человек не вошёл: без крестика, фон почти непрозрачный ===== */
+.sync-modal.is-locked .sync-modal__close{display:none}
+.sync-modal.is-locked .sync-modal__backdrop{background:radial-gradient(ellipse at center,#0b1638f2 0%,#03071afa 70%);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.sync-modal.is-locked{overflow-y:auto}
+
+/* ===== первый экран: «У вас уже есть аккаунт?» ===== */
+.sync-choice{display:grid;gap:12px;margin-top:4px}
+.sync-choice .sync-btn{width:100%;margin-top:0}
+.sync-btn--ghost{color:var(--gold-2);background:transparent;border:1px solid #f5cc6380;box-shadow:none}
+.sync-btn--ghost:hover{background:#f5cc6314;box-shadow:none}
+.sync-btn--ghost::after{display:none}
+
+/* «Вы ещё не зарегистрированы…» — когда нажали «Войти», а регистрации ещё нет */
+.sync-notice{
+  margin:-12px 0 20px;padding:12px 14px;border-radius:14px;text-align:left;
+  font:500 13px/1.45 "Montserrat";color:var(--gold-1);
+  background:#f5cc6314;border:1px solid #f5cc6355;
+}
+.sync-notice[hidden]{display:none}
