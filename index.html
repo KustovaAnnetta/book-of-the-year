@@ -16,6 +16,8 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/sync.css">
   <!-- язык сайта: английский словарь подключается сразу, если выбран английский (js/i18n.js) -->
+  <!-- книга закрыта, пока человек не вошёл: окно входа видно с первого кадра, книга за ним скрыта (css/sync.css html.kg-gate, js/sync.js lock) -->
+  <script>try{if(!localStorage.getItem("kniga-goda:v1:syncUser"))document.documentElement.classList.add("kg-gate")}catch(e){}</script>
   <script>try{var L=localStorage.getItem("kniga-goda:v1:lang");if(L!=="en"&&L!=="ru")L=[].concat(navigator.languages||[],navigator.language||"").some(function(x){return /^ru\b/i.test(x||"")})?"ru":"en";if(L==="en")document.write('<script src="i18n/en.js"><\/script><script src="i18n/en-art.js"><\/script>')}catch(e){}</script>
   <script src="js/i18n.js"></script>
   <link rel="stylesheet" href="css/settings.css">
@@ -2482,12 +2484,12 @@
       <!-- ===== Экран 0: первый вопрос — есть ли аккаунт. Книга закрыта, пока человек не вошёл ===== -->
       <div class="sv sv-start">
         <h2 class="sync-modal__title">Книга года<span class="sync-modal__script">добро пожаловать</span></h2>
-        <p class="sync-modal__subtitle">Книга открывается по почте, которую вы оставили автору при покупке. У вас уже есть аккаунт?</p>
+        <p class="sync-modal__subtitle">Книга открывается по почте, которую вы оставили автору при покупке. Вы уже прошли регистрацию?</p>
         <div class="sync-choice">
           <button type="button" class="sync-btn" data-sync-go="login"><span class="sync-btn__text">Да, войти</span></button>
           <button type="button" class="sync-btn sync-btn--ghost" data-sync-go="register"><span class="sync-btn__text">Нет, зарегистрироваться</span></button>
         </div>
-        <p class="sync-modal__note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>Книга доступна тем, кто её приобрёл</p>
+        <p class="sync-modal__note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>Доступ к книге открывается после покупки</p>
       </div>
 
       <!-- ===== Экран 1: регистрация ===== -->

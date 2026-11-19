@@ -164,7 +164,10 @@
     if (first) setTimeout(function () { first.focus(); }, 60);
   }
   // книга закрыта, пока человек не вошёл: окно без крестика, не закрывается по Esc и по клику мимо
-  function lock() { modal.classList.toggle("is-locked", !isRegistered()); }
+  function lock() {
+    modal.classList.toggle("is-locked", !isRegistered());
+    document.documentElement.classList.toggle("kg-gate", !isRegistered());   // книга за окном видна только после входа
+  }
   function open(target, view) {
     lastFocus = target || document.activeElement;
     lock();

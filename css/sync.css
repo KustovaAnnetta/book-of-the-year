@@ -307,3 +307,12 @@
   background:#f5cc6314;border:1px solid #f5cc6355;
 }
 .sync-notice[hidden]{display:none}
+
+/* ===== книга закрыта с первого кадра (класс kg-gate ставит скрипт в <head>, снимает js/sync.js после входа):
+   окно входа видно сразу, без появления и мигания, а сама книга за ним не показывается ===== */
+html.kg-gate body > :not(.sync-modal){visibility:hidden}
+html.kg-gate body{background:#03071a}
+html.kg-gate .sync-modal{visibility:visible;opacity:1;transition:none}
+html.kg-gate .sync-modal__close{display:none}
+html.kg-gate .sync-modal__backdrop{background:radial-gradient(ellipse at center,#0b1638 0%,#03071a 70%)}
+html.kg-gate .sync-modal[data-view="start"] .sv-start{animation:none}
