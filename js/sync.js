@@ -78,15 +78,37 @@
     return b.commit();
   }
 
+  /* Письмо со ссылкой для входа отправляет скрипт Google Таблицы (веб-приложение Apps Script):
+     красивое письмо в стиле сайта, с почты автора, на языке сайта. Скрипт сам проверяет, что почта
+     есть в списке покупателей, и берёт у Firebase саму ссылку. Пусто или скрипт не ответил —
+     обычное письмо Firebase, чтобы вход не ломался. */
+  var MAIL_URL = "";
+
   var Auth = {
     // отправить письмо со ссылкой для входа; reg = { name, birth } — при регистрации
     // (едет и в самой ссылке, чтобы регистрация завершилась, даже если письмо открыли на другом устройстве)
     sendLink: function (email, reg) {
       if (location.protocol === "file:") return Promise.reject({ code: "local-file" });
       var url = linkUrl() + (reg ? "?reg=1&n=" + encodeURIComponent(reg.name) + "&b=" + encodeURIComponent(reg.birth) : "");
-      return fbReady.then(function (F) {
-        return F.fb.sendSignInLinkToEmail(F.auth, email, { url: url, handleCodeInApp: true });
-      }).then(function () {
+      var viaFirebase = function () {
+        return fbReady.then(function (F) { return F.fb.sendSignInLinkToEmail(F.auth, email, { url: url, handleCodeInApp: true }); });
+      };
+      var final = { "not-listed": 1, "too-many-requests": 1, "invalid-email": 1 };   // это ответ по делу — Firebase не поможет
+      var job = MAIL_URL && !reg
+        ? fetch(MAIL_URL, { method: "POST", body: JSON.stringify({ email: email, lang: window.I18N ? I18N.lang() : "ru" }) })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+              if (res && res.ok) return;
+              var code = { none: "not-listed", wait: "too-many-requests", invalid: "invalid-email" }[res && res.reason] || "mail-script";
+              throw { code: code, message: res && res.message };
+            })
+            .catch(function (err) {
+              if (err && final[err.code]) throw err;
+              if (window.console) console.warn("Красивое письмо не отправилось, отправляем обычное:", err && (err.code || err.message || err), err && err.message);
+              return viaFirebase();
+            })
+        : viaFirebase();
+      return job.then(function () {
         set(EMAIL_FOR_LINK, email);
         set(REG_FOR_LINK, reg ? JSON.stringify(reg) : null);
       });
@@ -124,6 +146,7 @@
 
   function errorText(err) {
     var c = (err && err.code) || "";
+    if (c === "not-listed") return NOT_LISTED;
     if (c === "local-file") return "Вход работает на опубликованном сайте. Откройте kustovaannetta.github.io/book-of-the-year и попробуйте там.";
     if (c.indexOf("invalid-email") >= 0) return "Похоже, в адресе почты опечатка.";
     if (c.indexOf("unauthorized-continue-uri") >= 0 || c.indexOf("unauthorized-domain") >= 0) return "Этот адрес сайта не добавлен в Firebase (Authentication → Настройки → Авторизованные домены).";
@@ -361,6 +384,14 @@
     if (modal.classList.contains("is-open")) { lock(); if (view) show(view); } else open(null, view || "login");
   }
   gate();
+  // пришёл по кнопке из письма-приглашения (?email=…) — почта в окне входа уже вписана
+  (function prefill() {
+    var q = new URLSearchParams(location.search), em = q.get("email");
+    if (!em || q.get("oobCode")) return;
+    loginForm.email.value = em;
+    q.delete("email");
+    history.replaceState(null, "", linkUrl() + (q.toString() ? "?" + q.toString() : "") + location.hash);
+  })();
 
   /* ---------- переходы, закрытие, клавиатура ---------- */
   modal.addEventListener("click", function (e) {
