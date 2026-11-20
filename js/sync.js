@@ -82,7 +82,7 @@
      красивое письмо в стиле сайта, с почты автора, на языке сайта. Скрипт сам проверяет, что почта
      есть в списке покупателей, и берёт у Firebase саму ссылку. Пусто или скрипт не ответил —
      обычное письмо Firebase, чтобы вход не ломался. */
-  var MAIL_URL = "";
+  var MAIL_URL = "https://script.google.com/macros/s/AKfycbyi16jcui3x3hQrk7Hg26jsSXXhqmsBoJRSmnXqBqrO44R0AhDa54PEpWv2vj8-mzsV/exec";
 
   var Auth = {
     // отправить письмо со ссылкой для входа; reg = { name, birth } — при регистрации
