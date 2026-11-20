@@ -1349,3 +1349,11 @@ em.u { font-style: italic; text-decoration: underline; text-underline-offset: 2p
 }
 /* Телефон: без лотосов на заднем фоне */
 @media (max-width: 640px) { .lotus-veil { display: none; } }
+
+/* Курсор над полями для письма. Стандартная тонкая «палочка» почти не видна на линованной странице
+   и на тёмной обложке — кажется, что мышка пропала. Поэтому своя: та же палочка, но толще и с белой
+   обводкой, видна на любом фоне. Если браузер её не покажет — обычный текстовый курсор. */
+textarea, input:not([type]), input[type="text"], input[type="email"], input[type="number"], input[type="tel"], input[type="search"],
+[contenteditable="true"], [contenteditable="plaintext-only"], .lines, .rc, .rc-note, .cover-fields label {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cpath d='M8 3h8M8 21h8M12 3v18' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M8 3h8M8 21h8M12 3v18' fill='none' stroke='%23161616' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") 12 12, text !important;
+}
