@@ -540,7 +540,23 @@
       if (editable) el.textContent = saved; else el.value = saved;
       el.dispatchEvent(new Event("input", { bubbles: true }));
     }
-    el.addEventListener("input", function () { LS.set(key, editable ? el.innerText : el.value); });
+    el.addEventListener("input", function () { LS.set(key, editable ? el.innerText.replace(/​/g, "") : el.value); });
+  });
+  /* Пустое поле ответа: браузер рисует мигающую палочку в самом начале блока — а там, слева, стоит
+     подпись этапа (строки её обтекают), и палочку не видно: кажется, что писать нельзя.
+     Поэтому в пустое поле при нажатии ставится невидимый символ — палочка встаёт в начало первой
+     строки, рядом с подписью. В сохранённый ответ символ не попадает (см. выше), уходя — убирается. */
+  var ZW = "​";
+  document.querySelectorAll(".lines").forEach(function (el) {
+    var put = function () {
+      if (el.textContent !== "") return;
+      el.textContent = ZW;
+      var r = document.createRange(); r.setStart(el.firstChild, 1); r.collapse(true);
+      var s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    };
+    el.addEventListener("focus", function () { setTimeout(put, 0); });   // после того, как браузер поставит курсор сам
+    el.addEventListener("input", function () { if (document.activeElement === el) put(); });   // стёрли всё — снова
+    el.addEventListener("blur", function () { if (el.textContent === ZW) el.textContent = ""; });
   });
   /* Ресурсный круг (стр. 51): человек нажимает в любом месте вокруг круга — там появляется
      надпись, и он пишет прямо в этом месте (шрифт и цвет ручки из настроек). Надписи хранятся
